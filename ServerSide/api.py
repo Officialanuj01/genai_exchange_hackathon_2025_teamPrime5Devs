@@ -5,6 +5,7 @@ No user tracking, no document storage - just pure AI analysis
 """
 
 import os
+import sys
 import tempfile
 import shutil
 from datetime import datetime
@@ -37,15 +38,27 @@ app.add_middleware(
 
 # Initialize Gemini AI analyzer
 gemini_analyzer = None
-if settings.GEMINI_API_KEY and settings.GEMINI_API_KEY != "your-gemini-api-key-here":
-    try:
-        gemini_analyzer = GeminiLegalAnalyzer(settings.GEMINI_API_KEY)
-        print("✅ Gemini AI analyzer initialized successfully")
-    except Exception as e:
-        print(f"❌ Failed to initialize Gemini AI: {str(e)}")
-        gemini_analyzer = None
-else:
-    print("⚠️ Gemini API key not configured")
+
+@app.on_event("startup")
+async def startup_event():
+    """Initialize services on startup"""
+    global gemini_analyzer
+    print("🚀 Starting Legal AI Analysis API...")
+    print(f"📊 Python version: {sys.version}")
+    print(f"🔧 Port: {os.getenv('PORT', '8000')}")
+    print(f"🗝️ Gemini API Key configured: {bool(settings.GEMINI_API_KEY and settings.GEMINI_API_KEY != 'your-gemini-api-key-here')}")
+    
+    if settings.GEMINI_API_KEY and settings.GEMINI_API_KEY != "your-gemini-api-key-here":
+        try:
+            gemini_analyzer = GeminiLegalAnalyzer(settings.GEMINI_API_KEY)
+            print("✅ Gemini AI analyzer initialized successfully")
+        except Exception as e:
+            print(f"❌ Failed to initialize Gemini AI: {str(e)}")
+            gemini_analyzer = None
+    else:
+        print("⚠️ Gemini API key not configured")
+    
+    print("✅ Legal AI Analysis API startup complete")
 
 @app.get("/health")
 async def health_check():
