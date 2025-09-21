@@ -10,38 +10,28 @@ import tempfile
 import shutil
 from datetime import datetime
 from typing import List
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, File, UploadFile, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 import aiofiles
 
 # Import only essential modules
-from gemini_service import GeminiLegalAnalyzer
-from config import settings
-from text_extractor import extract_text_fast
-
-# Initialize FastAPI app
-app = FastAPI(
-    title="Legal AI Analysis API",
-    description="Ultra-simplified API for AI-powered legal document analysis with Gemini",
-    version="3.0.0"
-)
-
-# Add CORS middleware
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["GET", "POST", "OPTIONS"],
-    allow_headers=["*"],
-)
+try:
+    from gemini_service import GeminiLegalAnalyzer
+    from config import settings
+    from text_extractor import extract_text_fast
+    print("✅ All modules imported successfully")
+except ImportError as e:
+    print(f"❌ Import error: {e}")
+    raise
 
 # Initialize Gemini AI analyzer
 gemini_analyzer = None
 
-@app.on_event("startup")
-async def startup_event():
-    """Initialize services on startup"""
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Initialize services on startup and cleanup on shutdown"""
     global gemini_analyzer
     print("🚀 Starting Legal AI Analysis API...")
     print(f"📊 Python version: {sys.version}")
@@ -59,6 +49,25 @@ async def startup_event():
         print("⚠️ Gemini API key not configured")
     
     print("✅ Legal AI Analysis API startup complete")
+    yield
+    print("🔄 Shutting down Legal AI Analysis API...")
+
+# Initialize FastAPI app with lifespan
+app = FastAPI(
+    title="Legal AI Analysis API",
+    description="Ultra-simplified API for AI-powered legal document analysis with Gemini",
+    version="3.0.0",
+    lifespan=lifespan
+)
+
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["*"],
+)
 
 @app.get("/health")
 async def health_check():
@@ -87,6 +96,9 @@ async def analyze_legal_document(files: List[UploadFile] = File(...)):
         raise HTTPException(status_code=400, detail="No files uploaded")
     
     for file in files:
+        # Add null check for filename
+        if not file.filename:
+            raise HTTPException(status_code=400, detail="File has no filename")
         if not file.filename.lower().endswith('.pdf'):
             raise HTTPException(
                 status_code=400, 
