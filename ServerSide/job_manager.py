@@ -19,7 +19,8 @@ class JobManager:
     def __init__(self):
         # In-memory storage for jobs (in production, use Redis or database)
         self.jobs: Dict[str, Dict[str, Any]] = {}
-        self.max_jobs = 1000  # Limit memory usage
+        self.max_jobs = 100  # Reduced for cloud deployment
+        self.job_timeout = 300  # 5 minutes max per job
         
     def create_job(self, job_type: str = "legal_analysis") -> str:
         """Create a new job and return job ID"""
@@ -46,8 +47,18 @@ class JobManager:
         return job_id
     
     def get_job(self, job_id: str) -> Optional[Dict[str, Any]]:
-        """Get job details by ID"""
-        return self.jobs.get(job_id)
+        """Get job details by ID with timeout check"""
+        job = self.jobs.get(job_id)
+        if job:
+            # Check for timeout
+            if job["status"] == JobStatus.PROCESSING:
+                from datetime import datetime, timedelta
+                if job["started_at"]:
+                    started = datetime.fromisoformat(job["started_at"])
+                    if datetime.now() - started > timedelta(seconds=self.job_timeout):
+                        self.set_job_error(job_id, "Job timed out after 5 minutes")
+                        job["status"] = JobStatus.FAILED
+        return job
     
     def update_job_status(self, job_id: str, status: JobStatus, **kwargs):
         """Update job status and other fields"""
