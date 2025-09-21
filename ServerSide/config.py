@@ -6,8 +6,13 @@ import os
 from pathlib import Path
 from dotenv import load_dotenv
 
-# Load environment variables from .env file
-load_dotenv()
+# Load environment variables from .env file (only if file exists)
+env_file = Path(".env")
+if env_file.exists():
+    load_dotenv()
+    print("📄 Loaded .env file")
+else:
+    print("⚠️ No .env file found, using environment variables")
 
 class Settings:
     # API Configuration
