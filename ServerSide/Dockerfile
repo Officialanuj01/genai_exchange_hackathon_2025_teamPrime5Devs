@@ -5,12 +5,15 @@ FROM python:3.11-slim
 WORKDIR /app
 
 # Install system dependencies for PDF processing and OCR
+# Install in smaller groups to avoid package conflicts
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-    tesseract-ocr \
-    curl \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+    apt-get install -y --no-install-recommends tesseract-ocr tesseract-ocr-eng && \
+    apt-get install -y --no-install-recommends libgl1-mesa-glx libglib2.0-0 && \
+    apt-get install -y --no-install-recommends libsm6 libxext6 libxrender-dev && \
+    apt-get install -y --no-install-recommends libgomp1 libgthread-2.0-0 && \
+    apt-get install -y --no-install-recommends curl poppler-utils && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 # Copy requirements first for better caching
 COPY requirements.txt .
