@@ -20,8 +20,9 @@ RUN apt-get update && apt-get install -y \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Create symlinks for python
-RUN ln -s /usr/bin/python3.11 /usr/bin/python && \
+# Create symlinks for python (remove existing ones first)
+RUN rm -f /usr/bin/python /usr/bin/pip && \
+    ln -s /usr/bin/python3.11 /usr/bin/python && \
     ln -s /usr/bin/pip3 /usr/bin/pip
 
 # Set working directory
