@@ -14,8 +14,13 @@ RUN apt-get update && apt-get install -y \
     libxext6 \
     libxrender-dev \
     libgomp1 \
-    libglib2.0-0 \
+    libgthread-2.0-0 \
+    libgtk-3-0 \
+    libxss1 \
+    libasound2 \
     curl \
+    poppler-utils \
+    && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements first for better caching
